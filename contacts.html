@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление контактами</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --input-bg: #f5f5f5;
+            --input-border: #dddddd;
+            --button-bg: #2962b9;
+            --button-hover: #1e4b94;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --input-bg: #333333;
+            --input-border: #444444;
+            --button-bg: #3f51b5;
+            --button-hover: #303f9f;
+            --edit-btn-bg: #404040;
+            --edit-btn-hover: #505050;
+            --delete-btn-bg: #d32f2f;
+            --delete-btn-hover: #b71c1c;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* Стили для переключателя темы */
+        .theme-switch-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2a2a2a;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #f5f5f5;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Стили для формы */
+        .form-container {
+            background-color: var(--input-bg);
+            padding: 24px 20px 24px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .form-container h2 {
+            margin-bottom: 16px; /* увеличивает расстояние до поля "Имя" */
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            padding-right: 30px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: calc(100% - 10px) center;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 1em;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--button-bg);
+            box-shadow: 0 0 0 3px rgba(41, 98, 185, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--button-bg);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 1em;
+        }
+
+        button:hover {
+            background-color: var(--button-hover);
+        }
+
+        /* Активная (последней нажатая) кнопка фильтра */
+        .button-group button.active {
+            background-color: var(--button-hover);
+            filter: brightness(0.9); /* немного темнее, чем hover */
+        }
+
+        /* Стили для списка контактов */
+        .contacts-container {
+            margin-top: 30px;
+        }
+
+        .contact-card {
+            background-color: var(--input-bg);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            position: relative;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .contact-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .contact-info {
+            flex-grow: 1;
+            margin-right: 100px;
+        }
+
+        .contact-name {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .contact-actions {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .edit-btn,
+        .delete-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .edit-btn {
+            background-color: #404040;
+        }
+
+        .edit-btn:hover {
+            background-color: #505050;
+        }
+
+        .delete-btn {
+            background-color: #d32f2f;
+        }
+
+        .delete-btn:hover {
+            background-color: #b71c1c;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Стили для модального окна редактирования */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--bg-color);
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="theme-switch-container">
+            <span>Темная тема</span>
+            <label class="theme-switch">
+                <input type="checkbox" id="themeSwitch">
+                <span class="slider"></span>
+            </label>
+            <span>Обычная тема</span>
+        </div>
+
+        <h1>Управление контактами</h1>
+
+        <div class="form-container">
+            <h2>Добавить новый контакт</h2>
+            <form id="contactForm">
+                <div class="form-group">
+                    <label for="name">Имя:</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Телефон:</label>
+                    <input type="tel" id="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="status">Статус:</label>
+                    <select id="status" required>
+                        <option value="">Выберите статус</option>
+                        <option value="активный">Активный</option>
+                        <option value="неактивный">Неактивный</option>
+                    </select>
+                </div>
+                <button type="submit">Добавить контакт</button>
+            </form>
+        </div>
+
+        <div class="button-group">
+            <button id="showAllContacts">Показать все контакты</button>
+            <button id="showActiveContacts">Показать активные контакты</button>
+        </div>
+
+        <div id="contactsList" class="contacts-container">
+            <!-- Здесь будут отображаться контакты -->
+        </div>
+
+        <!-- Модальное окно для редактирования контакта -->
+        <div id="editModal" class="modal">
+            <div class="modal-content">
+                <button class="close-modal" onclick="closeEditModal()">&times;</button>
+                <h2>Редактировать контакт</h2>
+                <form id="editForm">
+                    <input type="hidden" id="editId">
+                    <div class="form-group">
+                        <label for="editName">Имя:</label>
+                        <input type="text" id="editName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmail">Email:</label>
+                        <input type="email" id="editEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPhone">Телефон:</label>
+                        <input type="tel" id="editPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStatus">Статус:</label>
+                        <select id="editStatus" required>
+                            <option value="активный">Активный</option>
+                            <option value="неактивный">Неактивный</option>
+                        </select>
+                    </div>
+                    <button type="submit">Сохранить изменения</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        const contactsList = document.getElementById('contactsList');
+        const contactForm = document.getElementById('contactForm');
+        const showAllContactsBtn = document.getElementById('showAllContacts');
+        const showActiveContactsBtn = document.getElementById('showActiveContacts');
+        const themeSwitch = document.getElementById('themeSwitch');
+
+        // Управление темой
+        themeSwitch.addEventListener('change', () => {
+            document.body.setAttribute('data-theme', themeSwitch.checked ? 'light' : 'dark');
+        });
+
+        // Установка начальной темы
+        document.body.setAttribute('data-theme', 'dark');
+        themeSwitch.checked = false;
+
+        // Функция создания карточки контакта
+        function createContactCard(contact, showStatus = true) {
+            const card = document.createElement('div');
+            card.className = 'contact-card';
+            card.innerHTML = `
+                <div class="contact-info">
+                    <div class="contact-name">${contact.name}</div>
+                    <div class="contact-details">
+                        <div>Email: ${contact.email}</div>
+                        <div>Телефон: ${contact.phone}</div>
+                        ${showStatus ? `<div>Статус: ${contact.status}</div>` : ''}
+                    </div>
+                </div>
+                <div class="contact-actions">
+                    <button class="edit-btn" onclick="openEditModal(${contact.id})">
+                        Изменить
+                    </button>
+                    <button class="delete-btn" onclick="deleteContact(${contact.id})">
+                        Удалить
+                    </button>
+                </div>
+            `;
+            return card;
+        }
+
+        // Загрузка всех контактов
+        async function loadAllContacts() {
+            try {
+                const response = await fetch(`${API_URL}/contacts`);
+                const contacts = await response.json();
+                contactsList.innerHTML = '';
+                contacts.forEach(contact => {
+                    contactsList.appendChild(createContactCard(contact, true));
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки контактов:', error);
+            }
+        }
+
+        // Загрузка активных контактов
+        async function loadActiveContacts() {
+            try {
+                const response = await fetch(`${API_URL}/contacts/active`);
+                const contacts = await response.json();
+                contactsList.innerHTML = '';
+                contacts.forEach(contact => {
+                    contactsList.appendChild(createContactCard(contact, false));
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки активных контактов:', error);
+            }
+        }
+
+        // Обработчик отправки формы
+        contactForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                status: document.getElementById('status').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/contacts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    contactForm.reset();
+                    loadAllContacts();
+                    alert('Контакт успешно добавлен!');
+                } else {
+                    throw new Error('Ошибка при добавлении контакта');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка при добавлении контакта');
+            }
+        });
+
+        // Подсветка выбранной кнопки
+        function setActiveButton(button) {
+            showAllContactsBtn.classList.remove('active');
+            showActiveContactsBtn.classList.remove('active');
+            button.classList.add('active');
+        }
+
+        // Обработчики кнопок
+        showAllContactsBtn.addEventListener('click', () => {
+            setActiveButton(showAllContactsBtn);
+            loadAllContacts();
+        });
+
+        showActiveContactsBtn.addEventListener('click', () => {
+            setActiveButton(showActiveContactsBtn);
+            loadActiveContacts();
+        });
+
+        // Функции для работы с модальным окном редактирования
+        function openEditModal(contactId) {
+            fetch(`${API_URL}/contacts/${contactId}`)
+                .then(response => response.json())
+                .then(contact => {
+                    document.getElementById('editId').value = contact.id;
+                    document.getElementById('editName').value = contact.name;
+                    document.getElementById('editEmail').value = contact.email;
+                    document.getElementById('editPhone').value = contact.phone;
+                    document.getElementById('editStatus').value = contact.status;
+                    document.getElementById('editModal').classList.add('active');
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    alert('Ошибка при получении данных контакта');
+                });
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        // Функция удаления контакта
+        function deleteContact(contactId) {
+            if (confirm('Вы уверены, что хотите удалить этот контакт?')) {
+                fetch(`${API_URL}/contacts/${contactId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        loadAllContacts();
+                        alert('Контакт успешно удален');
+                    } else {
+                        throw new Error('Ошибка при удалении контакта');
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    alert('Ошибка при удалении контакта');
+                });
+            }
+        }
+
+        // Обработчик формы редактирования
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const contactId = document.getElementById('editId').value;
+            const updatedContact = {
+                name: document.getElementById('editName').value,
+                email: document.getElementById('editEmail').value,
+                phone: document.getElementById('editPhone').value,
+                status: document.getElementById('editStatus').value
+            };
+
+            fetch(`${API_URL}/contacts/${contactId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedContact)
+            })
+            .then(response => {
+                if (response.ok) {
+                    closeEditModal();
+                    loadAllContacts();
+                    alert('Контакт успешно обновлен');
+                } else {
+                    throw new Error('Ошибка при обновлении контакта');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Ошибка при обновлении контакта');
+            });
+        });
+
+        // Автозагрузка отключена: контакты отображаются только по кнопке
+    </script>
+</body>
+</html>

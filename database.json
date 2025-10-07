@@ -1,0 +1,39 @@
+{
+    "contacts": [
+        {
+            "id": 1,
+            "name": "Иван Петров",
+            "email": "ivan.petrov@example.com",
+            "phone": "+79991234567",
+            "status": "активный"
+        },
+        {
+            "id": 2,
+            "name": "Анна",
+            "email": "anna.s@example.com",
+            "phone": "+79992345678",
+            "status": "активный"
+        },
+        {
+            "id": 3,
+            "name": "Михаил",
+            "email": "m.ivanov@example.com",
+            "phone": "+79993456789",
+            "status": "неактивный"
+        },
+        {
+            "name": "Илья",
+            "email": "ponchik@icloud.com",
+            "phone": "+79119657712",
+            "status": "активный",
+            "id": 4
+        },
+        {
+            "name": "Николай",
+            "email": "Nk@mail.ru",
+            "phone": "+792634674509",
+            "status": "неактивный",
+            "id": 5
+        }
+    ]
+}

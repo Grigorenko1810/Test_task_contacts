@@ -1,0 +1,12 @@
+
+services:
+  - type: web
+    name: test-task-contacts
+    env: node
+    plan: free
+    buildCommand: 'npm install'
+    startCommand: 'node server.js'
+    repository: https://github.com/Grigorenko1810/Test_task_contacts
+    routes:
+      - path: /contacts.html
+        external_url: http://localhost:3000/contacts.html

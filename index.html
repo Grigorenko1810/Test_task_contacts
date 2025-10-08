@@ -260,6 +260,22 @@
             display: none;
         }
 
+        /* Индикатор загрузки и сообщения */
+        .status-bar {
+            margin: 16px 0 0;
+            min-height: 22px;
+            font-size: 0.95em;
+        }
+        .status-bar .loading {
+            color: #777;
+        }
+        .status-bar .error {
+            color: #d32f2f;
+        }
+        .status-bar .success {
+            color: #2e7d32;
+        }
+
         /* Стили для модального окна редактирования */
         .modal {
             display: none;
@@ -349,6 +365,8 @@
             <!-- Здесь будут отображаться контакты -->
         </div>
 
+        <div id="statusBar" class="status-bar"></div>
+
         <!-- Модальное окно для редактирования контакта -->
         <div id="editModal" class="modal">
             <div class="modal-content">
@@ -382,12 +400,23 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api';
+        const API_URL = 'https://test-task-contacts.onrender.com/api';
         const contactsList = document.getElementById('contactsList');
         const contactForm = document.getElementById('contactForm');
         const showAllContactsBtn = document.getElementById('showAllContacts');
         const showActiveContactsBtn = document.getElementById('showActiveContacts');
         const themeSwitch = document.getElementById('themeSwitch');
+        const statusBar = document.getElementById('statusBar');
+
+        // Утилиты UI
+        function setStatus(message, type = 'loading') {
+            if (!message) { statusBar.textContent = ''; statusBar.className = 'status-bar'; return; }
+            statusBar.className = `status-bar ${type}`;
+            statusBar.textContent = message;
+        }
+        function showLoading(message = 'Загрузка...') { setStatus(message, 'loading'); }
+        function showSuccess(message = 'Готово') { setStatus(message, 'success'); }
+        function showError(message = 'Произошла ошибка') { setStatus(message, 'error'); }
 
         // Управление темой
         themeSwitch.addEventListener('change', () => {
@@ -426,28 +455,40 @@
         // Загрузка всех контактов
         async function loadAllContacts() {
             try {
-                const response = await fetch(`${API_URL}/contacts`);
+                showLoading('Загружаю все контакты...');
+                const response = await fetch(`${API_URL}/contacts`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
                 const contacts = await response.json();
                 contactsList.innerHTML = '';
                 contacts.forEach(contact => {
                     contactsList.appendChild(createContactCard(contact, true));
                 });
+                showSuccess('Список обновлён');
             } catch (error) {
                 console.error('Ошибка загрузки контактов:', error);
+                showError('Ошибка загрузки контактов');
             }
         }
 
         // Загрузка активных контактов
         async function loadActiveContacts() {
             try {
-                const response = await fetch(`${API_URL}/contacts/active`);
+                showLoading('Загружаю активные контакты...');
+                const response = await fetch(`${API_URL}/contacts/active`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
                 const contacts = await response.json();
                 contactsList.innerHTML = '';
                 contacts.forEach(contact => {
                     contactsList.appendChild(createContactCard(contact, false));
                 });
+                showSuccess('Активные контакты загружены');
             } catch (error) {
                 console.error('Ошибка загрузки активных контактов:', error);
+                showError('Ошибка загрузки активных контактов');
             }
         }
 
@@ -462,23 +503,24 @@
             };
 
             try {
+                showLoading('Добавляю контакт...');
                 const response = await fetch(`${API_URL}/contacts`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
 
-                if (response.ok) {
-                    contactForm.reset();
-                    loadAllContacts();
-                    alert('Контакт успешно добавлен!');
-                } else {
-                    throw new Error('Ошибка при добавлении контакта');
+                if (!response.ok) {
+                    const text = await response.text().catch(() => '');
+                    throw new Error(`HTTP ${response.status} ${response.statusText} ${text}`);
                 }
+
+                contactForm.reset();
+                await loadAllContacts();
+                showSuccess('Контакт успешно добавлен');
             } catch (error) {
-                console.error('Ошибка:', error);
+                console.error('Ошибка при добавлении контакта:', error);
+                showError('Ошибка при добавлении контакта');
                 alert('Ошибка при добавлении контакта');
             }
         });
@@ -503,7 +545,11 @@
 
         // Функции для работы с модальным окном редактирования
         function openEditModal(contactId) {
-            fetch(`${API_URL}/contacts/${contactId}`)
+            showLoading('Загружаю данные контакта...');
+            fetch(`${API_URL}/contacts/${contactId}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+            })
                 .then(response => response.json())
                 .then(contact => {
                     document.getElementById('editId').value = contact.id;
@@ -512,9 +558,11 @@
                     document.getElementById('editPhone').value = contact.phone;
                     document.getElementById('editStatus').value = contact.status;
                     document.getElementById('editModal').classList.add('active');
+                    setStatus('');
                 })
                 .catch(error => {
-                    console.error('Ошибка:', error);
+                    console.error('Ошибка при получении данных контакта:', error);
+                    showError('Ошибка при получении данных контакта');
                     alert('Ошибка при получении данных контакта');
                 });
         }
@@ -526,21 +574,25 @@
         // Функция удаления контакта
         function deleteContact(contactId) {
             if (confirm('Вы уверены, что хотите удалить этот контакт?')) {
+                showLoading('Удаляю контакт...');
                 fetch(`${API_URL}/contacts/${contactId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
                 })
-                .then(response => {
-                    if (response.ok) {
-                        loadAllContacts();
-                        alert('Контакт успешно удален');
-                    } else {
-                        throw new Error('Ошибка при удалении контакта');
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка:', error);
-                    alert('Ошибка при удалении контакта');
-                });
+                    .then(async response => {
+                        if (!response.ok) {
+                            const text = await response.text().catch(() => '');
+                            throw new Error(`HTTP ${response.status} ${response.statusText} ${text}`);
+                        }
+                        await loadAllContacts();
+                        showSuccess('Контакт успешно удалён');
+                        alert('Контакт успешно удалён');
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при удалении контакта:', error);
+                        showError('Ошибка при удалении контакта');
+                        alert('Ошибка при удалении контакта');
+                    });
             }
         }
 
@@ -555,24 +607,25 @@
                 status: document.getElementById('editStatus').value
             };
 
+            showLoading('Сохраняю изменения...');
             fetch(`${API_URL}/contacts/${contactId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedContact)
             })
-            .then(response => {
-                if (response.ok) {
-                    closeEditModal();
-                    loadAllContacts();
-                    alert('Контакт успешно обновлен');
-                } else {
-                    throw new Error('Ошибка при обновлении контакта');
+            .then(async response => {
+                if (!response.ok) {
+                    const text = await response.text().catch(() => '');
+                    throw new Error(`HTTP ${response.status} ${response.statusText} ${text}`);
                 }
+                closeEditModal();
+                await loadAllContacts();
+                showSuccess('Контакт успешно обновлён');
+                alert('Контакт успешно обновлён');
             })
             .catch(error => {
-                console.error('Ошибка:', error);
+                console.error('Ошибка при обновлении контакта:', error);
+                showError('Ошибка при обновлении контакта');
                 alert('Ошибка при обновлении контакта');
             });
         });

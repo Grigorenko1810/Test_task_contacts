@@ -12,6 +12,11 @@ app.use(cors()); // Разрешаем CORS для всех источников
 app.use(express.json()); // Парсинг JSON в теле запроса
 app.use(express.static('.')); // Раздача статических файлов из текущей директории
 
+// Отдавать фронтенд по корню
+app.get('/', (req, res) => {
+	res.sendFile(path.join(__dirname, 'contacts.html'));
+});
+
 // Вспомогательные функции для работы с базой данных
 async function readDatabase() {
     try {
@@ -151,7 +156,7 @@ app.use((err, req, res, next) => {
 
 // Запуск сервера
 app.listen(PORT, () => {
-    const appUrl = `http://localhost:${PORT}/contacts.html`;
+	const appUrl = `http://localhost:${PORT}/`;
     console.log(`Сервер запущен на порту ${PORT}`);
     console.log(`Откройте приложение: ${appUrl}`);
 });

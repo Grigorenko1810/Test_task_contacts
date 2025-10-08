@@ -4,11 +4,20 @@ const path = require('path');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const DATABASE_FILE = path.join(__dirname, 'database.json');
 
 // Middleware
-app.use(cors()); // Разрешаем CORS для всех источников
+const corsOptions = {
+    origin: [
+        'https://grigorenko1810.github.io',
+        'https://test-task-contacts.onrender.com'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type'],
+};
+app.use(cors(corsOptions)); // Разрешаем CORS только для указанных источников
+app.options('*', cors(corsOptions));
 app.use(express.json()); // Парсинг JSON в теле запроса
 app.use(express.static('.')); // Раздача статических файлов из текущей директории
 
@@ -156,7 +165,5 @@ app.use((err, req, res, next) => {
 
 // Запуск сервера
 app.listen(PORT, () => {
-	const appUrl = `http://localhost:${PORT}/`;
     console.log(`Сервер запущен на порту ${PORT}`);
-    console.log(`Откройте приложение: ${appUrl}`);
 });
